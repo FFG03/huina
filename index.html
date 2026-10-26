@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Library</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="logo">
+      <span class="logo-icon">🎮</span>
+      <span>Game Library</span>
+    </a>
+  </nav>
+
+  <main class="container">
+    <header class="page-header">
+      <h1>Моя библиотека</h1>
+      <p class="subtitle" id="game-count"></p>
+    </header>
+
+    <div class="games-grid" id="games-grid"></div>
+  </main>
+
+  <footer class="footer">
+    <span>Сделано вручную</span>
+  </footer>
+
+  <script>
+    // 🔥 ДОБАВЛЯЕШЬ ИГРЫ СЮДА. Копируй блок и меняй поля.
+    const games = [
+      {
+        id: 'cosmic-clicker',
+        name: 'Cosmic Clicker',
+        description: 'Космический кликер с апгрейдами, дронами и анимированным звёздным фоном.',
+        year: 2026,
+        tags: ['Кликер', 'Idle'],
+        cover: 'games/cosmic-clicker/monia.png'
+      }
+      // Вторая игра:
+      // {
+      //   id: 'platformer',
+      //   name: 'Neon Platformer',
+      //   description: '2D-платформер с неоновой графикой.',
+      //   year: 2026,
+      //   tags: ['Платформер'],
+      //   cover: 'games/platformer/cover.png'
+      // }
+    ];
+
+    function renderGames() {
+      const grid = document.getElementById('games-grid');
+      const countEl = document.getElementById('game-count');
+
+      countEl.textContent = games.length === 1
+        ? '1 игра'
+        : games.length + ' игр';
+
+      if (games.length === 0) {
+        grid.innerHTML = '<div class="empty">Пока нет игр. Добавь в массив games в index.html.</div>';
+        return;
+      }
+
+      grid.innerHTML = games.map(g => `
+        <a href="games/${g.id}/" class="game-card">
+          <div class="game-cover">
+            ${g.cover ? `<img src="${g.cover}" alt="${g.name}" loading="lazy">` : ''}
+            <div class="game-cover-bg"></div>
+          </div>
+          <div class="game-info">
+            <h2>${g.name}</h2>
+            <p class="game-desc">${g.description}</p>
+            <div class="game-meta">
+              <div class="game-tags">
+                ${g.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+              </div>
+              <span class="game-year">${g.year}</span>
+            </div>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    renderGames();
+  </script>
+</body>
+</html>

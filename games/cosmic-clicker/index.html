@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Космический кликер</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+    }
+
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #game-container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+
+    #energy-display {
+      position: relative;
+      z-index: 1;
+      font-size: 3.5rem;
+      font-weight: 700;
+      text-shadow: 0 0 20px rgba(0, 198, 255, 0.5);
+      letter-spacing: 0.1em;
+    }
+
+    #energy-display span {
+      color: #00c6ff;
+    }
+
+    /* ИСПРАВЛЕННЫЙ БЛОК КНОПКИ */
+    #click-btn {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: none;
+      /* Задаем темный фон, чтобы blend-mode сработал */
+      background-color: #0a0a1a; 
+      background-image: url('monia.png');
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      /* МАГИЯ: черный цвет картинки смешается с темным фоном и исчезнет */
+      background-blend-mode: screen; 
+      box-shadow: 0 0 30px #0072ff;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+      z-index: 10;
+    }
+
+    #click-btn:hover {
+      box-shadow: 0 0 40px #00c6ff;
+    }
+
+    #click-btn:active {
+      transform: scale(0.95);
+    }
+
+    .upgrades {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .upgrade-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      width: 240px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .upgrade-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0, 114, 255, 0.15);
+    }
+
+    .upgrade-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #00c6ff;
+    }
+
+    .upgrade-price {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+
+    .upgrade-desc {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .buy-btn {
+      background: rgba(0, 198, 255, 0.2);
+      color: #00c6ff;
+      border: 1px solid rgba(0, 198, 255, 0.3);
+    }
+
+    .buy-btn:hover:not(:disabled) {
+      background: rgba(0, 198, 255, 0.35);
+      box-shadow: 0 0 20px rgba(0, 198, 255, 0.2);
+    }
+
+    .buy-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    #reset-btn {
+      margin-top: auto;
+      margin-bottom: 40px;
+      padding: 8px 24px;
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    #reset-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div id="game-container">
+    <div id="energy-display"><span id="energy-val">0</span> <span style="color: #ffffff; opacity: 0.7;">ЭНЕРГИЯ</span></div>
+    <button id="click-btn"></button>
+    <div class="upgrades">
+      <div class="upgrade-card">
+        <div class="upgrade-title">Усилитель</div>
+        <div class="upgrade-price" id="amplifier-price">50</div>
+        <div class="upgrade-desc">+1 за клик</div>
+        <button id="buy-amplifier" class="buy-btn">Купить</button>
+      </div>
+      <div class="upgrade-card">
+        <div class="upgrade-title">Дрон</div>
+        <div class="upgrade-price" id="drone-price">100</div>
+        <div class="upgrade-desc">+1 в секунду</div>
+        <button id="buy-drone" class="buy-btn">Купить</button>
+      </div>
+    </div>
+    <button id="reset-btn">Сбросить</button>
+  </div>
+
+  <script>
+    let state = {
+      energy: 0,
+      clickPower: 1,
+      drones: 0,
+      amplifierCost: 50,
+      droneCost: 100
+    };
+
+    const energyEl = document.getElementById('energy-val');
+    const clickBtn = document.getElementById('click-btn');
+    const amplifierPriceEl = document.getElementById('amplifier-price');
+    const amplifierBtn = document.getElementById('buy-amplifier');
+    const dronePriceEl = document.getElementById('drone-price');
+    const droneBtn = document.getElementById('buy-drone');
+    const resetBtn = document.getElementById('reset-btn');
+
+    function updateUI() {
+      energyEl.textContent = state.energy.toLocaleString();
+      amplifierPriceEl.textContent = state.amplifierCost.toLocaleString();
+      dronePriceEl.textContent = state.droneCost.toLocaleString();
+
+      amplifierBtn.disabled = state.energy < state.amplifierCost;
+      droneBtn.disabled = state.energy < state.droneCost;
+    }
+
+    function saveState() {
+      localStorage.setItem('cosmicClicker', JSON.stringify(state));
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem('cosmicClicker');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object' && Object.keys(parsed).every(k => typeof state[k] === 'number')) {
+            state = parsed;
+          }
+        } catch (e) {
+          console.error('Ошибка загрузки состояния:', e);
+        }
+      }
+    }
+
+    clickBtn.addEventListener('click', () => {
+      state.energy += state.clickPower;
+      saveState();
+      updateUI();
+    });
+
+    amplifierBtn.addEventListener('click', () => {
+      if (state.energy >= state.amplifierCost) {
+        state.energy -= state.amplifierCost;
+        state.clickPower += 1;
+        state.amplifierCost = Math.floor(state.amplifierCost * 1.5);
+        saveState();
+        updateUI();
+      }
+    });
+
+    droneBtn.addEventListener('click', () => {
+      if (state.energy >= state.droneCost) {
+        state.energy -= state.droneCost;
+        state.drones += 1;
+        state.droneCost = Math.floor(state.droneCost * 1.5);
+        saveState();
+        updateUI();
+      }
+    });
+
+    setInterval(() => {
+      state.energy += state.drones;
+      saveState();
+      updateUI();
+    }, 1000);
+
+    resetBtn.addEventListener('click', () => {
+      localStorage.removeItem('cosmicClicker');
+      location.reload();
+    });
+
+    loadState();
+    updateUI();
+
+    // --- Starfield & Comet Background ---
+    const bgCanvas = document.getElementById('bg-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    let BW, BH;
+    function bgResize() {
+      BW = bgCanvas.width = window.innerWidth;
+      BH = bgCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', bgResize);
+    bgResize();
+
+    // Stars
+    const bgStars = [];
+    for (let i = 0; i < 200; i++) {
+      bgStars.push({
+        x: Math.random() * BW,
+        y: Math.random() * BH,
+        r: Math.random() * 1.5 + 0.5,
+        alpha: Math.random(),
+        twinkle: Math.random() * 0.02 + 0.005
+      });
+    }
+
+    // Comets
+    const bgComets = [];
+    let nextCometAt = Date.now() + 10000 + Math.random() * 20000;
+
+    function spawnComet() {
+      const fromLeft = Math.random() > 0.5;
+      bgComets.push({
+        x: fromLeft ? -60 : BW + 60,
+        y: Math.random() * BH * 0.5,
+        vx: (fromLeft ? 1 : -1) * (Math.random() * 3 + 4),
+        vy: Math.random() * 2 + 1,
+        life: 1.0,
+        tail: []
+      });
+    }
+
+    function drawBg() {
+      const grad = bgCtx.createRadialGradient(BW/2, BH/2, 0, BW/2, BH/2, Math.max(BW, BH)/2);
+      grad.addColorStop(0, '#1a1a3e');
+      grad.addColorStop(1, '#0a0a1a');
+      bgCtx.fillStyle = grad;
+      bgCtx.fillRect(0, 0, BW, BH);
+
+      // Stars
+      for (let s of bgStars) {
+        s.alpha += s.twinkle;
+        if (s.alpha > 1 || s.alpha < 0.2) s.twinkle *= -1;
+        bgCtx.globalAlpha = s.alpha;
+        bgCtx.fillStyle = '#fff';
+        bgCtx.beginPath();
+        bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        bgCtx.fill();
+      }
+      bgCtx.globalAlpha = 1;
+
+      // Spawn
+      if (Date.now() > nextCometAt) {
+        spawnComet();
+        nextCometAt = Date.now() + 20000 + Math.random() * 20000;
+      }
+
+      // Comets
+      for (let i = bgComets.length - 1; i >= 0; i--) {
+        const c = bgComets[i];
+        c.x += c.vx;
+        c.y += c.vy;
+        c.life -= 0.003;
+        c.tail.push({ x: c.x, y: c.y });
+        if (c.tail.length > 20) c.tail.shift();
+
+        for (let j = 0; j < c.tail.length; j++) {
+          const t = c.tail[j];
+          bgCtx.globalAlpha = (j / c.tail.length) * c.life * 0.6;
+          bgCtx.fillStyle = '#7fdbff';
+          bgCtx.beginPath();
+          bgCtx.arc(t.x, t.y, 3 - j * 0.1, 0, Math.PI * 2);
+          bgCtx.fill();
+        }
+
+        bgCtx.globalAlpha = c.life;
+        bgCtx.shadowColor = '#00ffff';
+        bgCtx.shadowBlur = 20;
+        bgCtx.fillStyle = '#fff';
+        bgCtx.beginPath();
+        bgCtx.arc(c.x, c.y, 4, 0, Math.PI * 2);
+        bgCtx.fill();
+        bgCtx.shadowBlur = 0;
+        bgCtx.globalAlpha = 1;
+
+        if (c.life <= 0 || c.x < -150 || c.x > BW + 150 || c.y > BH + 50) {
+          bgComets.splice(i, 1);
+        }
+      }
+    }
+
+    function bgLoop() {
+      drawBg();
+      requestAnimationFrame(bgLoop);
+    }
+    bgLoop();
+  </script>
+</body>
+</html>
